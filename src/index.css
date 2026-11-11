@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #111111;
+    color: #F5F5F5;
+    letter-spacing: 0.01em;
+    overflow-x: hidden;
+  }
+
+  code, pre, textarea.font-mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Ensure the top control bar and editor chrome NEVER appear if the outer window is printed */
+@media print {
+  header,
+  [aria-label="HTML Code Editor Pane"],
+  .preview-chrome-bar {
+    display: none !important;
+  }
+
+  html,
+  body,
+  #root {
+    background: transparent !important;
+    height: auto !important;
+    width: auto !important;
+    overflow: visible !important;
+  }
+}
+
+/* Subtle editorial scrollbars for dark workspace */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111111;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2A2A2A;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3A3A3A;
+}

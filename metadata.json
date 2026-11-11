@@ -1,0 +1,6 @@
+{
+  "name": "Oxblood PDF Studio — HTML to PDF Architect",
+  "description": "Production-grade HTML-to-PDF conversion workspace with real-time isolated iframe preview, dynamic @page CSS injection, html2pdf.js raster engine, and native vector print engine.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
