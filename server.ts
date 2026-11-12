@@ -7,6 +7,7 @@ import { existsSync } from 'fs';
 import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
+import { prepareRawHtmlForPdf } from './src/utils/pdfConfig';
 
 const execFileAsync = promisify(execFile);
 
@@ -25,32 +26,6 @@ function findChromiumExecutable(): string | null {
     }
   }
   return null;
-}
-
-/**
- * Ensures the HTML string is a valid document and preserves background colors in PDF
- * without overriding any of the user's own CSS, layout, or @page rules.
- */
-function prepareHtmlForNativePdf(rawHtml: string): string {
-  const colorRule = `<style id="rotoscope-print-color-preserve">html, body, * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }</style>`;
-  const trimmed = rawHtml.trim();
-
-  if (!trimmed) {
-    return `<!DOCTYPE html><html><head><meta charset="UTF-8">${colorRule}</head><body></body></html>`;
-  }
-
-  if (/<head[\s>]/i.test(trimmed)) {
-    return trimmed.replace(/<head([^>]*)>/i, `<head$1>\n${colorRule}`);
-  }
-
-  if (/<html[\s>]/i.test(trimmed)) {
-    return trimmed.replace(
-      /<html([^>]*)>/i,
-      `<html$1>\n<head><meta charset="UTF-8">${colorRule}</head>`
-    );
-  }
-
-  return `<!DOCTYPE html>\n<html>\n<head>\n<meta charset="UTF-8">\n${colorRule}\n</head>\n<body>\n${trimmed}\n</body>\n</html>`;
 }
 
 async function startServer() {
@@ -79,7 +54,7 @@ async function startServer() {
     const outputPdfPath = path.join(tmpDir, `rotoscope-${jobId}.pdf`);
 
     try {
-      const preparedHtml = prepareHtmlForNativePdf(rawHtml);
+      const preparedHtml = prepareRawHtmlForPdf(rawHtml);
       await fs.writeFile(inputHtmlPath, preparedHtml, 'utf-8');
 
       await execFileAsync(

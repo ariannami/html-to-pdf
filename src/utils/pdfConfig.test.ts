@@ -23,12 +23,18 @@ describe('pdfConfig pure functions', () => {
     assert.equal(pxToMm(1080), 285.75);
   });
 
-  it('prepareRawHtmlForPdf preserves user HTML without injecting @page overrides', () => {
-    const customHtml = '<!DOCTYPE html><html><head><style>@page { size: 1200px 800px; margin: 15mm; } body { background: #000; }</style></head><body><h1>Rotoscope</h1></body></html>';
+  it('prepareRawHtmlForPdf preserves user HTML without injecting @page overrides and embeds B Nazanin font', () => {
+    const customHtml = '<!DOCTYPE html><html><head><style>@page { size: 1200px 800px; margin: 15mm; } body { background: #000; font-family: "Plus Jakarta Sans", sans-serif; }</style></head><body><h1>گزارش پروژه</h1></body></html>';
     const result = prepareRawHtmlForPdf(customHtml);
 
     assert.match(result, /<style id="pdf-color-preserve">/);
     assert.match(result, /-webkit-print-color-adjust: exact !important;/);
+    assert.match(result, /font-family: "B Nazanin"/);
+    assert.match(result, /data:font\/woff2;base64,/);
+    assert.match(
+      result,
+      /font-family:\s*"RotoscopePersianBNazanin",\s*"B Nazanin",\s*"Plus Jakarta Sans",\s*sans-serif/
+    );
     // Ensure user's own @page rule is completely untouched and no conflicting @page is injected
     const pageMatches = result.match(/@page/g) || [];
     assert.equal(pageMatches.length, 1);
@@ -36,11 +42,11 @@ describe('pdfConfig pure functions', () => {
   });
 
   it('prepareRawHtmlForPdf wraps partial HTML fragments cleanly', () => {
-    const snippet = '<div class="card">Hello World</div>';
+    const snippet = '<div class="card">سلام دنیا</div>';
     const wrapped = prepareRawHtmlForPdf(snippet);
     assert.match(wrapped, /<!DOCTYPE html>/i);
     assert.match(wrapped, /<head>/i);
-    assert.match(wrapped, /<div class="card">Hello World<\/div>/);
+    assert.match(wrapped, /<div class="card">سلام دنیا<\/div>/);
   });
 
   it('buildDirectHtml2PdfOptions uses exact measured dimensions without forcing A4', () => {

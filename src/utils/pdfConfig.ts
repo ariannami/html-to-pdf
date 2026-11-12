@@ -1,6 +1,9 @@
+import { buildBNazaninFontFaceCss } from './bNazaninFont';
+
 /**
  * Pure utility functions for direct HTML-to-PDF conversion without altering
- * the user's own CSS, layout dimensions, or @page rules.
+ * the user's own CSS layout dimensions or @page rules, while guaranteeing
+ * authentic B Nazanin rendering for all Farsi/Persian text.
  */
 
 /**
@@ -27,31 +30,111 @@ export function pxToMm(px: number): number {
 }
 
 /**
+ * Prepends the Unicode-ranged B Nazanin font-family ("RotoscopePersianBNazanin")
+ * to CSS font-family declarations inside <style> blocks so Farsi characters always
+ * render in B Nazanin even when a generic or Latin font (like Arial, Tahoma, or
+ * Plus Jakarta Sans) is specified.
+ */
+export function enhanceFontFamilyDeclarationsForFarsi(html: string): string {
+  return html.replace(
+    /(<style\b[^>]*>)([\s\S]*?)(<\/style>)/gi,
+    (fullBlock, openTag: string, cssContent: string, closeTag: string) => {
+      if (/id=["']pdf-color-preserve["']/i.test(openTag)) {
+        return fullBlock;
+      }
+      const updatedCss = cssContent.replace(
+        /(font-family\s*:\s*)([^;}]+)/gi,
+        (match, prefix: string, value: string) => {
+          if (/RotoscopePersianBNazanin/i.test(value)) {
+            return match;
+          }
+          const trimmedVal = value.trim();
+          const importantSuffix = /\s*!important\s*$/i.test(trimmedVal)
+            ? ' !important'
+            : '';
+          const cleanVal = trimmedVal.replace(/\s*!important\s*$/i, '').trim();
+          return `${prefix}"RotoscopePersianBNazanin", "B Nazanin", ${cleanVal}${importantSuffix}`;
+        }
+      );
+      return `${openTag}${updatedCss}${closeTag}`;
+    }
+  );
+}
+
+/**
  * Prepares raw HTML for preview and PDF conversion without injecting any @page size
  * or margin overrides that could conflict with the user's document CSS.
- * Only inserts a print-color-adjust rule at the start of <head> so background colors
- * and gradients are preserved by default while giving 100% precedence to the user's styles.
+ * Embeds the B Nazanin @font-face (base64 WOFF2) and print-color-adjust rule so
+ * dark backgrounds and Farsi/Persian typography render with 100% fidelity.
  */
 export function prepareRawHtmlForPdf(rawHtml: string): string {
-  const colorPreserveTag = `<style id="pdf-color-preserve">html, body, * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }</style>`;
-  const trimmed = rawHtml.trim();
+  const bNazaninCss = buildBNazaninFontFaceCss();
+  const baseStyleTag = `<style id="pdf-color-preserve">
+${bNazaninCss}
+html, body, * {
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+  color-adjust: exact !important;
+}
+html, body {
+  font-family: "RotoscopePersianBNazanin", "B Nazanin", sans-serif;
+}
+:lang(fa), [dir="rtl"] {
+  font-family: "RotoscopePersianBNazanin", "B Nazanin", sans-serif;
+}
+</style>`;
+
+  const farsiDomScript = `<script id="pdf-farsi-font-helper">
+(function() {
+  var farsiRegex = /[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]/;
+  function applyBNazaninToFarsiNodes() {
+    if (!document.body) return;
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+    var node;
+    while ((node = walker.nextNode())) {
+      if (node.nodeValue && farsiRegex.test(node.nodeValue)) {
+        var el = node.parentElement;
+        if (el && !el.hasAttribute("data-b-nazanin-applied")) {
+          var computed = window.getComputedStyle(el).fontFamily || "sans-serif";
+          if (computed.indexOf("RotoscopePersianBNazanin") === -1) {
+            el.style.setProperty("font-family", '"RotoscopePersianBNazanin", "B Nazanin", ' + computed, "important");
+          }
+          el.setAttribute("data-b-nazanin-applied", "true");
+        }
+      }
+    }
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", applyBNazaninToFarsiNodes);
+  } else {
+    applyBNazaninToFarsiNodes();
+  }
+  window.addEventListener("load", applyBNazaninToFarsiNodes);
+})();
+</script>`;
+
+  const trimmed = enhanceFontFamilyDeclarationsForFarsi(rawHtml.trim());
 
   if (!trimmed) {
-    return `<!DOCTYPE html><html><head><meta charset="UTF-8">${colorPreserveTag}</head><body></body></html>`;
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8">${baseStyleTag}</head><body></body></html>`;
   }
 
-  if (/<head[\s>]/i.test(trimmed)) {
-    return trimmed.replace(/<head([^>]*)>/i, `<head$1>\n${colorPreserveTag}`);
-  }
-
-  if (/<html[\s>]/i.test(trimmed)) {
-    return trimmed.replace(
+  let withHead = trimmed;
+  if (/<head[\s>]/i.test(withHead)) {
+    withHead = withHead.replace(/<head([^>]*)>/i, `<head$1>\n${baseStyleTag}`);
+  } else if (/<html[\s>]/i.test(withHead)) {
+    withHead = withHead.replace(
       /<html([^>]*)>/i,
-      `<html$1>\n<head>\n<meta charset="UTF-8">\n${colorPreserveTag}\n</head>`
+      `<html$1>\n<head>\n<meta charset="UTF-8">\n${baseStyleTag}\n</head>`
     );
+  } else {
+    withHead = `<!DOCTYPE html>\n<html lang="fa">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n${baseStyleTag}\n</head>\n<body>\n${withHead}\n</body>\n</html>`;
   }
 
-  return `<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n${colorPreserveTag}\n</head>\n<body>\n${trimmed}\n</body>\n</html>`;
+  if (/<\/body>/i.test(withHead)) {
+    return withHead.replace(/<\/body>/i, `${farsiDomScript}\n</body>`);
+  }
+  return `${withHead}\n${farsiDomScript}`;
 }
 
 export interface Html2PdfOptions {
