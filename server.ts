@@ -7,7 +7,11 @@ import { existsSync } from 'fs';
 import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
-import { prepareRawHtmlForPdf } from './src/utils/pdfConfig';
+import {
+  DEFAULT_LANGUAGE_FONT_SETTINGS,
+  PdfLanguageFontSettings,
+  prepareRawHtmlForPdf,
+} from './src/utils/pdfConfig';
 
 const execFileAsync = promisify(execFile);
 
@@ -35,8 +39,13 @@ async function startServer() {
   // Support large pasted HTML documents (up to 50MB)
   app.use(express.json({ limit: '50mb' }));
 
-  app.post('/api/pdf', async (req, res) => {
+  app.post(['/api/pdf', '/html-to-pdf/api/pdf'], async (req, res) => {
     const rawHtml = typeof req.body?.html === 'string' ? req.body.html : '';
+    const fontSettings: PdfLanguageFontSettings =
+      req.body?.fontSettings && typeof req.body.fontSettings === 'object'
+        ? { ...DEFAULT_LANGUAGE_FONT_SETTINGS, ...req.body.fontSettings }
+        : DEFAULT_LANGUAGE_FONT_SETTINGS;
+
     if (!rawHtml.trim()) {
       res.status(400).json({ error: 'HTML content is required' });
       return;
@@ -54,7 +63,7 @@ async function startServer() {
     const outputPdfPath = path.join(tmpDir, `rotoscope-${jobId}.pdf`);
 
     try {
-      const preparedHtml = prepareRawHtmlForPdf(rawHtml);
+      const preparedHtml = prepareRawHtmlForPdf(rawHtml, fontSettings);
       await fs.writeFile(inputHtmlPath, preparedHtml, 'utf-8');
 
       await execFileAsync(
@@ -91,9 +100,23 @@ async function startServer() {
       server: { middlewareMode: true },
       appType: 'spa',
     });
+    // Allow accessing root / in dev even when vite.config.ts has base: '/html-to-pdf/'
+    app.use((req, _res, next) => {
+      if (
+        !req.url.startsWith('/html-to-pdf') &&
+        !req.url.startsWith('/api/') &&
+        !req.url.startsWith('/@') &&
+        !req.url.startsWith('/src/') &&
+        !req.url.startsWith('/node_modules/')
+      ) {
+        req.url = `/html-to-pdf${req.url === '/' ? '/' : req.url}`;
+      }
+      next();
+    });
     app.use(vite.middlewares);
   } else {
     const distPath = path.resolve(process.cwd(), 'dist');
+    app.use('/html-to-pdf', express.static(distPath));
     app.use(express.static(distPath));
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));

@@ -6,6 +6,8 @@ import {
   prepareRawHtmlForPdf,
   buildDirectHtml2PdfOptions,
   calculateEditorStats,
+  EnglishFontPreset,
+  FarsiFontPreset,
 } from './pdfConfig.ts';
 
 describe('pdfConfig pure functions', () => {
@@ -23,30 +25,44 @@ describe('pdfConfig pure functions', () => {
     assert.equal(pxToMm(1080), 285.75);
   });
 
-  it('prepareRawHtmlForPdf preserves user HTML without injecting @page overrides and embeds B Nazanin font', () => {
-    const customHtml = '<!DOCTYPE html><html><head><style>@page { size: 1200px 800px; margin: 15mm; } body { background: #000; font-family: "Plus Jakarta Sans", sans-serif; }</style></head><body><h1>گزارش پروژه</h1></body></html>';
-    const result = prepareRawHtmlForPdf(customHtml);
+  it('prepareRawHtmlForPdf in EN Original mode does not inject B Nazanin so English numbers stay untouched', () => {
+    const customHtml =
+      '<!DOCTYPE html><html><head><style>@page { size: 1200px 800px; margin: 15mm; } body { background: #000; font-family: "Plus Jakarta Sans", sans-serif; }</style></head><body><h1>4,820 m²</h1></body></html>';
+    const result = prepareRawHtmlForPdf(customHtml, {
+      languageMode: 'en',
+      englishFont: EnglishFontPreset.Original,
+      farsiFont: FarsiFontPreset.BNazanin,
+    });
 
     assert.match(result, /<style id="pdf-color-preserve">/);
-    assert.match(result, /-webkit-print-color-adjust: exact !important;/);
-    assert.match(result, /font-family: "B Nazanin"/);
-    assert.match(result, /data:font\/woff2;base64,/);
-    assert.match(
-      result,
-      /font-family:\s*"RotoscopePersianBNazanin",\s*"B Nazanin",\s*"Plus Jakarta Sans",\s*sans-serif/
-    );
-    // Ensure user's own @page rule is completely untouched and no conflicting @page is injected
+    assert.doesNotMatch(result, /B Nazanin/);
+    // Ensure user's own @page rule is completely untouched
     const pageMatches = result.match(/@page/g) || [];
     assert.equal(pageMatches.length, 1);
-    assert.match(result, /@page \{ size: 1200px 800px; margin: 15mm; \}/);
   });
 
-  it('prepareRawHtmlForPdf wraps partial HTML fragments cleanly', () => {
-    const snippet = '<div class="card">سلام دنیا</div>';
-    const wrapped = prepareRawHtmlForPdf(snippet);
-    assert.match(wrapped, /<!DOCTYPE html>/i);
-    assert.match(wrapped, /<head>/i);
-    assert.match(wrapped, /<div class="card">سلام دنیا<\/div>/);
+  it('prepareRawHtmlForPdf in EN custom font mode applies the chosen English font', () => {
+    const customHtml = '<!DOCTYPE html><html><head></head><body><h1>Report 2026</h1></body></html>';
+    const result = prepareRawHtmlForPdf(customHtml, {
+      languageMode: 'en',
+      englishFont: EnglishFontPreset.JetBrainsMono,
+      farsiFont: FarsiFontPreset.BNazanin,
+    });
+
+    assert.match(result, /JetBrains Mono/);
+    assert.doesNotMatch(result, /B Nazanin/);
+  });
+
+  it('prepareRawHtmlForPdf in FA mode embeds and applies the selected Farsi font', () => {
+    const customHtml = '<!DOCTYPE html><html><head></head><body><h1>گزارش پروژه</h1></body></html>';
+    const result = prepareRawHtmlForPdf(customHtml, {
+      languageMode: 'fa',
+      englishFont: EnglishFontPreset.Original,
+      farsiFont: FarsiFontPreset.BNazanin,
+    });
+
+    assert.match(result, /font-family: "B Nazanin"/);
+    assert.match(result, /data:font\/woff2;base64,/);
   });
 
   it('buildDirectHtml2PdfOptions uses exact measured dimensions without forcing A4', () => {

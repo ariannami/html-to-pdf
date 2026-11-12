@@ -507,3 +507,187 @@ export const SAMPLE_TEMPLATES: SampleTemplate[] = [
 </html>`,
   },
 ];
+
+export const DEFAULT_FARSI_SAMPLE_HTML = `<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>گزارش فنی و مهندسی روتوسکوپ</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #121212;
+      color: #F5F5F5;
+      font-family: 'B Nazanin', Tahoma, sans-serif;
+      line-height: 1.85;
+      padding: 40px 48px;
+      direction: rtl;
+      text-align: right;
+    }
+    .masthead {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #2A2A2A;
+      margin-bottom: 24px;
+    }
+    .kicker {
+      font-size: 14px;
+      color: #C93B61;
+      margin-bottom: 4px;
+    }
+    h1 {
+      font-size: 34px;
+      font-weight: bold;
+      color: #FFFFFF;
+    }
+    .meta {
+      text-align: left;
+      font-size: 14px;
+      color: #A3A3A3;
+    }
+    .hero {
+      background: linear-gradient(135deg, #7F072B 0%, #3A0414 55%, #1A1A1A 100%);
+      border: 1px solid #4A1525;
+      padding: 24px 28px;
+      margin-bottom: 28px;
+      display: grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+    .hero h2 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      color: #FFFFFF;
+    }
+    .hero p {
+      font-size: 16px;
+      color: #E5E5E5;
+    }
+    .metrics {
+      border-right: 1px solid rgba(255, 255, 255, 0.2);
+      padding-right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .metric-val {
+      font-size: 26px;
+      font-weight: bold;
+      color: #FFFFFF;
+    }
+    .metric-lbl {
+      font-size: 14px;
+      color: #D4D4D4;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-size: 16px;
+    }
+    th {
+      text-align: right;
+      padding: 10px 14px;
+      background-color: #1A1A1A;
+      border-top: 1px solid #2A2A2A;
+      border-bottom: 1px solid #2A2A2A;
+      color: #A3A3A3;
+    }
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #222222;
+      color: #E5E5E5;
+    }
+    .num {
+      text-align: left;
+    }
+    tr.total td {
+      background-color: #1A1A1A;
+      border-top: 1px solid #3A3A3A;
+      border-bottom: 1px solid #3A3A3A;
+      font-weight: bold;
+      color: #FFFFFF;
+    }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <div>
+      <div class="kicker">۰۱ · گزارش تخصصی معماری و سازه</div>
+      <h1>پاویون کرونو — مشخصات فنی و آکوستیک</h1>
+    </div>
+    <div class="meta">
+      <div>شماره سند: KP-1405-089</div>
+      <div>تاریخ: آبان ۱۴۰۵</div>
+      <div>وضعیت: تایید نهایی</div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <h2>خلاصه مدیریتی و مشخصات مصالح</h2>
+      <p>
+        این سند با پشتیبانی کامل از فونت‌های فارسی (بی نازنین، وزیرمتن، بی یکان، بی زر و بی تیتر) طراحی شده است تا متون و اعداد فارسی با بالاترین کیفیت وکتور در خروجی PDF ثبت شوند.
+      </p>
+    </div>
+    <div class="metrics">
+      <div>
+        <div class="metric-val">۴,۸۲۰ متر مربع</div>
+        <div class="metric-lbl">مساحت کل زیربنای آکوستیک</div>
+      </div>
+      <div>
+        <div class="metric-val">۰.۱۸ ثانیه</div>
+        <div class="metric-lbl">زمان بازآوایی استاندارد (RT60)</div>
+      </div>
+    </div>
+  </section>
+
+  <table>
+    <thead>
+      <tr>
+        <th>کد بسته</th>
+        <th>شرح مشخصات اجرایی</th>
+        <th>مهندس مسئول</th>
+        <th class="num">وزن (تن)</th>
+        <th class="num">تخصیص بودجه (یورو)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>STR-104</td>
+        <td>سازه دیاگرید بتن بازالت پیش‌تنیده</td>
+        <td>م. ونس</td>
+        <td class="num">۱,۴۲۰.۰</td>
+        <td class="num">۲,۸۴۰,۰۰۰</td>
+      </tr>
+      <tr>
+        <td>FAC-208</td>
+        <td>نمای کرتین‌وال سه‌جداره آکوستیک</td>
+        <td>ه. لیندکویست</td>
+        <td class="num">۳۱۸.۵</td>
+        <td class="num">۱,۹۶۵,۴۰۰</td>
+      </tr>
+      <tr>
+        <td>ACO-312</td>
+        <td>آرایه پنل‌های آلومینیومی آنودایز شده</td>
+        <td>س. تاکاهاشی</td>
+        <td class="num">۸۴.۲</td>
+        <td class="num">۱,۱۲۰,۸۰۰</td>
+      </tr>
+      <tr class="total">
+        <td colspan="3">جمع کل تعهدات سرمایه‌ای فاز اول</td>
+        <td class="num">۱,۸۲۲.۷</td>
+        <td class="num">۵,۹۲۶,۲۰۰</td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+</html>`;
+

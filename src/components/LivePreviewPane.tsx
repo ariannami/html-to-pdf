@@ -4,12 +4,18 @@ import {
   Sparkles,
   FileText,
 } from 'lucide-react';
-import { prepareRawHtmlForPdf } from '../utils/pdfConfig';
+import {
+  ENGLISH_FONT_OPTIONS,
+  FARSI_FONT_OPTIONS,
+  PdfLanguageFontSettings,
+  prepareRawHtmlForPdf,
+} from '../utils/pdfConfig';
 
 interface LivePreviewPaneProps {
   iframeRef: React.RefObject<HTMLIFrameElement | null>;
   htmlCode: string;
   filename: string;
+  fontSettings: PdfLanguageFontSettings;
   onLoadDefaultSample: () => void;
   exportStatusMessage?: string | null;
 }
@@ -18,11 +24,19 @@ export const LivePreviewPane: React.FC<LivePreviewPaneProps> = ({
   iframeRef,
   htmlCode,
   filename,
+  fontSettings,
   onLoadDefaultSample,
   exportStatusMessage,
 }) => {
   const isEmpty = htmlCode.trim().length === 0;
-  const preparedHtml = prepareRawHtmlForPdf(htmlCode);
+  const preparedHtml = prepareRawHtmlForPdf(htmlCode, fontSettings);
+
+  const activeFontLabel =
+    fontSettings.languageMode === 'en'
+      ? ENGLISH_FONT_OPTIONS.find((o) => o.id === fontSettings.englishFont)
+          ?.label || 'Original HTML Font'
+      : FARSI_FONT_OPTIONS.find((o) => o.id === fontSettings.farsiFont)
+          ?.label || 'B Nazanin (بی نازنین)';
 
   return (
     <section
@@ -40,7 +54,7 @@ export const LivePreviewPane: React.FC<LivePreviewPaneProps> = ({
             ·
           </span>
           <span className="hidden sm:inline text-[11px] font-mono text-[#9A9A9A] truncate">
-            1:1 Native Render (Unmodified HTML/CSS)
+            {fontSettings.languageMode.toUpperCase()} · {activeFontLabel}
           </span>
         </div>
 
@@ -61,7 +75,9 @@ export const LivePreviewPane: React.FC<LivePreviewPaneProps> = ({
             </h3>
             <p className="text-xs text-[#A3A3A3] leading-relaxed mb-6">
               Paste your HTML code in the editor or drop an{' '}
-              <code className="text-[#F5F5F5]">.html</code> file. Your document will render here as-is and convert directly to PDF without layout alterations.
+              <code className="text-[#F5F5F5]">.html</code> file. Switch between{' '}
+              <strong className="text-[#F5F5F5]">EN</strong> and{' '}
+              <strong className="text-[#F5F5F5]">FA (فارسی)</strong> in the top header to select your typography.
             </p>
             <button
               type="button"
@@ -85,11 +101,10 @@ export const LivePreviewPane: React.FC<LivePreviewPaneProps> = ({
 
       {/* Preview Footer Bar */}
       <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-[#1A1A1A] border-t border-[#2A2A2A] flex items-center justify-between gap-2 text-[11px] font-mono text-[#9A9A9A] shrink-0">
-        <span className="whitespace-nowrap">
-          <span className="sm:hidden">1:1 Native PDF</span>
-          <span className="hidden sm:inline">Engine: Native Chromium PDF + Print Vector</span>
+        <span className="truncate">
+          {fontSettings.languageMode === 'en' ? 'EN Mode' : 'FA Mode'} · {activeFontLabel}
         </span>
-        <div className="truncate text-right" role="status" aria-live="polite">
+        <div className="truncate text-right shrink-0" role="status" aria-live="polite">
           {exportStatusMessage ? (
             <span className="text-[#E5E5E5]">{exportStatusMessage}</span>
           ) : (

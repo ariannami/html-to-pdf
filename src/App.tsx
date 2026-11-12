@@ -4,10 +4,16 @@ import { HtmlEditorPane } from './components/HtmlEditorPane';
 import { LivePreviewPane } from './components/LivePreviewPane';
 import {
   buildDirectHtml2PdfOptions,
+  DEFAULT_LANGUAGE_FONT_SETTINGS,
+  EnglishFontPreset,
+  FarsiFontPreset,
+  LanguageMode,
   normalizePdfFilename,
+  PdfLanguageFontSettings,
   prepareRawHtmlForPdf,
 } from './utils/pdfConfig';
 import {
+  DEFAULT_FARSI_SAMPLE_HTML,
   DEFAULT_SAMPLE_HTML,
   SAMPLE_TEMPLATES,
   SampleTemplate,
@@ -35,23 +41,61 @@ export default function App() {
 
   const [htmlCode, setHtmlCode] = useState<string>(DEFAULT_SAMPLE_HTML);
   const [filename, setFilename] = useState<string>('document.pdf');
+  const [fontSettings, setFontSettings] = useState<PdfLanguageFontSettings>(
+    DEFAULT_LANGUAGE_FONT_SETTINGS
+  );
   const [mobileTab, setMobileTab] = useState<MobileActiveTab>('editor');
   const [isGeneratingDirect, setIsGeneratingDirect] = useState(false);
   const [exportStatusMessage, setExportStatusMessage] = useState<string | null>(
     null
   );
 
+  const handleChangeLanguageMode = useCallback((mode: LanguageMode) => {
+    setFontSettings((prev) => ({ ...prev, languageMode: mode }));
+    setHtmlCode((currentHtml) => {
+      if (mode === 'fa' && currentHtml === DEFAULT_SAMPLE_HTML) {
+        return DEFAULT_FARSI_SAMPLE_HTML;
+      }
+      if (mode === 'en' && currentHtml === DEFAULT_FARSI_SAMPLE_HTML) {
+        return DEFAULT_SAMPLE_HTML;
+      }
+      return currentHtml;
+    });
+    setExportStatusMessage(
+      mode === 'fa'
+        ? 'Switched to Farsi (فارسی) typography mode'
+        : 'Switched to English (EN) typography mode'
+    );
+  }, []);
+
+  const handleChangeEnglishFont = useCallback((englishFont: EnglishFontPreset) => {
+    setFontSettings((prev) => ({ ...prev, englishFont }));
+  }, []);
+
+  const handleChangeFarsiFont = useCallback((farsiFont: FarsiFontPreset) => {
+    setFontSettings((prev) => ({ ...prev, farsiFont }));
+  }, []);
+
   const handleClearEditor = useCallback(() => {
     setHtmlCode('');
     setExportStatusMessage('Editor cleared');
   }, []);
 
-  const handleLoadSample = useCallback((template?: SampleTemplate) => {
-    const chosen = template || SAMPLE_TEMPLATES[0];
-    setHtmlCode(chosen.html);
-    setFilename(chosen.recommendedFilename);
-    setExportStatusMessage(`Loaded sample: ${chosen.name}`);
-  }, []);
+  const handleLoadSample = useCallback(
+    (template?: SampleTemplate) => {
+      if (fontSettings.languageMode === 'fa') {
+        setHtmlCode(DEFAULT_FARSI_SAMPLE_HTML);
+        setFilename('krono-farsi-report.pdf');
+        setExportStatusMessage('Loaded Farsi sample HTML');
+        return;
+      }
+      const chosen = template || SAMPLE_TEMPLATES[0];
+      setHtmlCode(chosen.html);
+      setFilename(chosen.recommendedFilename);
+      setExportStatusMessage(`Loaded sample: ${chosen.name}`);
+    },
+    [fontSettings.languageMode]
+  );
 
   const handleFileLoaded = useCallback((loadedName: string, content: string) => {
     setHtmlCode(content);
@@ -80,10 +124,18 @@ export default function App() {
       const response = await fetch('/api/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html: htmlCode, filename: normalizedName }),
-      });
+        body: JSON.stringify({
+          html: htmlCode,
+          filename: normalizedName,
+          fontSettings,
+        }),
+      }).catch(() => null);
 
-      if (response.ok) {
+      if (
+        response &&
+        response.ok &&
+        response.headers.get('content-type')?.includes('application/pdf')
+      ) {
         const pdfBlob = await response.blob();
         const downloadUrl = URL.createObjectURL(pdfBlob);
         const link = document.createElement('a');
@@ -97,6 +149,7 @@ export default function App() {
         return;
       }
 
+      // Client-side fallback (for GitHub Pages / static hosting)
       const iframe = iframeRef.current;
       const doc = iframe?.contentDocument;
       const iframeWin = iframe?.contentWindow as
@@ -106,6 +159,10 @@ export default function App() {
 
       if (!doc || !doc.body || !iframeWin) {
         throw new Error('Preview frame not ready');
+      }
+
+      if (doc.fonts && typeof doc.fonts.ready?.then === 'function') {
+        await doc.fonts.ready;
       }
 
       if (typeof iframeWin.html2pdf !== 'function') {
@@ -166,7 +223,7 @@ export default function App() {
     } finally {
       setIsGeneratingDirect(false);
     }
-  }, [htmlCode, filename]);
+  }, [htmlCode, filename, fontSettings]);
 
   const handleTriggerPrintVectorPdf = useCallback(() => {
     if (!htmlCode.trim()) {
@@ -175,7 +232,7 @@ export default function App() {
     }
 
     const normalizedName = normalizePdfFilename(filename);
-    const preparedHtml = prepareRawHtmlForPdf(htmlCode);
+    const preparedHtml = prepareRawHtmlForPdf(htmlCode, fontSettings);
 
     const existingPrintFrame = document.getElementById(
       'dedicated-vector-print-iframe'
@@ -213,14 +270,18 @@ export default function App() {
     window.setTimeout(() => {
       printWin.focus();
       printWin.print();
-    }, 250);
-  }, [htmlCode, filename]);
+    }, 300);
+  }, [htmlCode, filename, fontSettings]);
 
   return (
     <div className="flex flex-col h-dvh w-screen bg-[#111111] text-[#F5F5F5] overflow-hidden">
       <TopControlBar
         filename={filename}
         onChangeFilename={setFilename}
+        fontSettings={fontSettings}
+        onChangeLanguageMode={handleChangeLanguageMode}
+        onChangeEnglishFont={handleChangeEnglishFont}
+        onChangeFarsiFont={handleChangeFarsiFont}
         onDownloadDirectPdf={handleDownloadDirectPdf}
         onTriggerPrintVectorPdf={handleTriggerPrintVectorPdf}
         isGeneratingDirect={isGeneratingDirect}
@@ -253,6 +314,7 @@ export default function App() {
             iframeRef={iframeRef}
             htmlCode={htmlCode}
             filename={filename}
+            fontSettings={fontSettings}
             onLoadDefaultSample={() => handleLoadSample(SAMPLE_TEMPLATES[0])}
             exportStatusMessage={exportStatusMessage}
           />
