@@ -7,6 +7,7 @@ import {
 import {
   ENGLISH_FONT_OPTIONS,
   FARSI_FONT_OPTIONS,
+  normalizePersianHTML,
   PdfLanguageFontSettings,
   prepareRawHtmlForPdf,
 } from '../utils/pdfConfig';
@@ -29,14 +30,15 @@ export const LivePreviewPane: React.FC<LivePreviewPaneProps> = ({
   exportStatusMessage,
 }) => {
   const isEmpty = htmlCode.trim().length === 0;
-  const preparedHtml = prepareRawHtmlForPdf(htmlCode, fontSettings);
+  const normalizedHtml = normalizePersianHTML(htmlCode);
+  const preparedHtml = prepareRawHtmlForPdf(normalizedHtml, fontSettings);
 
   const activeFontLabel =
     fontSettings.languageMode === 'en'
       ? ENGLISH_FONT_OPTIONS.find((o) => o.id === fontSettings.englishFont)
-          ?.label || 'Original HTML Font'
+          ?.label || 'Vazirmatn (Default)'
       : FARSI_FONT_OPTIONS.find((o) => o.id === fontSettings.farsiFont)
-          ?.label || 'B Nazanin (بی نازنین)';
+          ?.label || 'Vazirmatn (وزیرمتن)';
 
   return (
     <section

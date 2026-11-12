@@ -9,6 +9,7 @@ import os from 'os';
 import crypto from 'crypto';
 import {
   DEFAULT_LANGUAGE_FONT_SETTINGS,
+  normalizePersianHTML,
   PdfLanguageFontSettings,
   prepareRawHtmlForPdf,
 } from './src/utils/pdfConfig';
@@ -63,7 +64,8 @@ async function startServer() {
     const outputPdfPath = path.join(tmpDir, `rotoscope-${jobId}.pdf`);
 
     try {
-      const preparedHtml = prepareRawHtmlForPdf(rawHtml, fontSettings);
+      const normalizedHtml = normalizePersianHTML(rawHtml);
+      const preparedHtml = prepareRawHtmlForPdf(normalizedHtml, fontSettings);
       await fs.writeFile(inputHtmlPath, preparedHtml, 'utf-8');
 
       await execFileAsync(

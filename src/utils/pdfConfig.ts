@@ -1,8 +1,12 @@
 import { PERSIAN_FONT_WOFF2_BASE64 } from './bNazaninFont';
 
+export const VAZIRMATN_CDN_URL =
+  'https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css';
+
 export type LanguageMode = 'en' | 'fa';
 
 export enum EnglishFontPreset {
+  VazirmatnDefault = 'vazirmatn-default',
   Original = 'original',
   PlusJakartaSans = 'plus-jakarta',
   Inter = 'inter',
@@ -12,8 +16,8 @@ export enum EnglishFontPreset {
 }
 
 export enum FarsiFontPreset {
-  BNazanin = 'b-nazanin',
   Vazirmatn = 'vazirmatn',
+  BNazanin = 'b-nazanin',
   BYekan = 'b-yekan',
   BZar = 'b-zar',
   BTitr = 'b-titr',
@@ -29,79 +33,104 @@ export interface FontOptionSpec<T extends string> {
 
 export const ENGLISH_FONT_OPTIONS: FontOptionSpec<EnglishFontPreset>[] = [
   {
-    id: EnglishFontPreset.Original,
-    label: 'Original HTML Font (Default)',
-    cssFamily: '',
+    id: EnglishFontPreset.VazirmatnDefault,
+    label: 'Vazirmatn (Default RTL/LTR Safe)',
+    cssFamily: "'Vazirmatn', Tahoma, sans-serif",
   },
   {
     id: EnglishFontPreset.PlusJakartaSans,
     label: 'Plus Jakarta Sans',
-    cssFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif',
+    cssFamily: "'Plus Jakarta Sans', 'Vazirmatn', Tahoma, sans-serif",
     googleFontHref:
       'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap',
   },
   {
     id: EnglishFontPreset.Inter,
     label: 'Inter',
-    cssFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
+    cssFamily: "'Inter', 'Vazirmatn', Tahoma, sans-serif",
     googleFontHref:
       'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
   },
   {
     id: EnglishFontPreset.CormorantGaramond,
     label: 'Cormorant Garamond (Serif)',
-    cssFamily: '"Cormorant Garamond", Georgia, serif',
+    cssFamily: "'Cormorant Garamond', 'Vazirmatn', Georgia, serif",
     googleFontHref:
       'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&display=swap',
   },
   {
     id: EnglishFontPreset.JetBrainsMono,
     label: 'JetBrains Mono',
-    cssFamily: '"JetBrains Mono", monospace',
+    cssFamily: "'JetBrains Mono', 'Vazirmatn', monospace",
     googleFontHref:
       'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap',
   },
   {
     id: EnglishFontPreset.Georgia,
     label: 'Georgia / Classic Serif',
-    cssFamily: 'Georgia, "Times New Roman", Times, serif',
+    cssFamily: "Georgia, 'Times New Roman', 'Vazirmatn', serif",
+  },
+  {
+    id: EnglishFontPreset.Original,
+    label: 'Original HTML CSS Stack',
+    cssFamily: "'Vazirmatn', Tahoma, sans-serif",
   },
 ];
 
 export const FARSI_FONT_OPTIONS: FontOptionSpec<FarsiFontPreset>[] = [
   {
-    id: FarsiFontPreset.BNazanin,
-    label: 'B Nazanin (بی نازنین)',
-    cssFamily: '"B Nazanin", "BNazanin", Tahoma, sans-serif',
+    id: FarsiFontPreset.Vazirmatn,
+    label: 'Vazirmatn (وزیرمتن — استاندارد)',
+    cssFamily: "'Vazirmatn', Tahoma, sans-serif",
   },
   {
-    id: FarsiFontPreset.Vazirmatn,
-    label: 'Vazirmatn (وزیرمتن)',
-    cssFamily: '"Vazirmatn", "B Nazanin", Tahoma, sans-serif',
-    googleFontHref:
-      'https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap',
+    id: FarsiFontPreset.BNazanin,
+    label: 'B Nazanin (بی نازنین)',
+    cssFamily: "'B Nazanin', 'BNazanin', 'Vazirmatn', Tahoma, sans-serif",
   },
   {
     id: FarsiFontPreset.BYekan,
     label: 'B Yekan (بی یکان)',
-    cssFamily: '"B Yekan", "BYekan", Tahoma, sans-serif',
+    cssFamily: "'B Yekan', 'BYekan', 'Vazirmatn', Tahoma, sans-serif",
   },
   {
     id: FarsiFontPreset.BZar,
     label: 'B Zar (بی زر)',
-    cssFamily: '"B Zar", "BZar", Tahoma, sans-serif',
+    cssFamily: "'B Zar', 'BZar', 'Vazirmatn', Tahoma, sans-serif",
   },
   {
     id: FarsiFontPreset.BTitr,
     label: 'B Titr Bold (بی تیتر)',
-    cssFamily: '"B Titr", "BTitr", Tahoma, sans-serif',
+    cssFamily: "'B Titr', 'BTitr', 'Vazirmatn', Tahoma, sans-serif",
   },
   {
     id: FarsiFontPreset.BLotus,
     label: 'B Lotus (بی لوتوس)',
-    cssFamily: '"B Lotus", "BLotus", Tahoma, sans-serif',
+    cssFamily: "'B Lotus', 'BLotus', 'Vazirmatn', Tahoma, sans-serif",
   },
 ];
+
+/**
+ * 1. AUTOMATIC PERSIAN CHARACTER NORMALIZATION (CRITICAL):
+ * Runs automatically on all input HTML before rendering the preview AND before exporting to PDF.
+ * - Replaces all instances of Arabic/Persian Heh with Yeh above (`ۀ` / `\u06C0`) and
+ *   decomposed Heh + Hamza above (`هٔ` / `\u0647\u0654` and `\u0647\u0655`, plus `\u06C2`)
+ *   with the standard Persian sequence: Heh + Zero-Width Non-Joiner (ZWNJ) + Yeh (`ه\u200Cی` / `\u0647\u200C\u06CC`).
+ * - Replaces Arabic Yeh (`ي` / `\u064A` and `ى` / `\u0649`) with standard Persian Yeh (`ی` / `\u06CC`).
+ * - Replaces Arabic Kaf (`ك` / `\u0643`) with Persian Kaf (`ک` / `\u06A9`).
+ */
+export function normalizePersianHTML(html: string): string {
+  if (!html) return '';
+  return html
+    // Replace decomposed Heh + Hamza above/below (\u0647\u0654 and \u0647\u0655) and precomposed Heh with Yeh above (\u06C0, \u06C2)
+    .replace(/\u0647[\u0654\u0655]|\u0647?[\u06C0\u06C2]/g, '\u0647\u200C\u06CC')
+    // Also handle numeric HTML entities for \u06C0 if present in raw markup
+    .replace(/\u0647?(?:&#1728;|&#x0*6[cC]0;)/g, '\u0647\u200C\u06CC')
+    // Replace Arabic Yeh (\u064A and Alef Maksura \u0649) with standard Persian Yeh (\u06CC)
+    .replace(/[\u064A\u0649]/g, '\u06CC')
+    // Replace Arabic Kaf (\u0643) with standard Persian Kaf (\u06A9)
+    .replace(/\u0643/g, '\u06A9');
+}
 
 /**
  * Builds @font-face declarations for the embedded Persian fonts using Base64 WOFF2
@@ -134,7 +163,6 @@ export function buildPersianFontFaceCss(selectedFarsiFont: FarsiFontPreset): str
     },
   };
 
-  // Always register B Nazanin plus whichever Farsi font is currently selected
   const keysToInclude = new Set<Exclude<FarsiFontPreset, FarsiFontPreset.Vazirmatn>>([
     FarsiFontPreset.BNazanin,
   ]);
@@ -192,92 +220,97 @@ export interface PdfLanguageFontSettings {
 }
 
 export const DEFAULT_LANGUAGE_FONT_SETTINGS: PdfLanguageFontSettings = {
-  languageMode: 'en',
-  englishFont: EnglishFontPreset.Original,
-  farsiFont: FarsiFontPreset.BNazanin,
+  languageMode: 'fa',
+  englishFont: EnglishFontPreset.VazirmatnDefault,
+  farsiFont: FarsiFontPreset.Vazirmatn,
 };
 
 /**
- * Prepares raw HTML for preview and PDF conversion without injecting @page size
- * or margin overrides.
- * - In 'en' mode: preserves Western/English numerals (0-9) and either keeps the HTML's
- *   original fonts or applies the selected English font preset.
- * - In 'fa' mode: embeds the selected Persian font (B Nazanin, Vazirmatn, B Yekan,
- *   B Zar, B Titr, or B Lotus) and applies it across the document.
+ * 2. INJECT STANDARD PERSIAN FONT (VAZIRMATN) & FIX RTL TYPOGRAPHY:
+ * Automatically runs `normalizePersianHTML` and injects:
+ * - `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" />`
+ * - Anti-disconnection & glyph shaping CSS rules (`letter-spacing: 0px !important`,
+ *   `font-feature-settings: "kern" 1, "liga" 1, "calt" 1 !important`,
+ *   `-webkit-font-smoothing: antialiased`, and `print-color-adjust: exact !important`).
  */
 export function prepareRawHtmlForPdf(
   rawHtml: string,
   fontSettings: PdfLanguageFontSettings = DEFAULT_LANGUAGE_FONT_SETTINGS
 ): string {
+  // Always normalize Persian characters first (ۀ / هٔ -> ه‌ی, ي/ى -> ی, ك -> ک)
+  const normalizedHtml = normalizePersianHTML(rawHtml);
+
   const { languageMode, englishFont, farsiFont } = fontSettings;
 
-  let googleFontLink = '';
-  let customFontCss = '';
+  const vazirmatnLinkTag = `<link rel="stylesheet" href="${VAZIRMATN_CDN_URL}" />`;
+  let extraGoogleFontLink = '';
+  let activeFontFamily = "'Vazirmatn', Tahoma, sans-serif";
+  let extraFontFaces = '';
 
   if (languageMode === 'en') {
     const enSpec =
       ENGLISH_FONT_OPTIONS.find((o) => o.id === englishFont) ||
       ENGLISH_FONT_OPTIONS[0];
-
     if (enSpec.googleFontHref) {
-      googleFontLink = `<link rel="stylesheet" href="${enSpec.googleFontHref}">\n`;
+      extraGoogleFontLink = `\n<link rel="stylesheet" href="${enSpec.googleFontHref}" />`;
     }
-
-    if (enSpec.id !== EnglishFontPreset.Original && enSpec.cssFamily) {
-      customFontCss = `html, body, body * {
-  font-family: ${enSpec.cssFamily} !important;
-}`;
+    if (enSpec.cssFamily) {
+      activeFontFamily = enSpec.cssFamily;
     }
   } else {
     const faSpec =
       FARSI_FONT_OPTIONS.find((o) => o.id === farsiFont) ||
       FARSI_FONT_OPTIONS[0];
-
     if (faSpec.googleFontHref) {
-      googleFontLink = `<link rel="stylesheet" href="${faSpec.googleFontHref}">\n`;
+      extraGoogleFontLink = `\n<link rel="stylesheet" href="${faSpec.googleFontHref}" />`;
     }
-
-    const persianFontFaces = buildPersianFontFaceCss(faSpec.id);
-    customFontCss = `${persianFontFaces}
-html, body, body * {
-  font-family: ${faSpec.cssFamily} !important;
-}`;
+    activeFontFamily = faSpec.cssFamily;
+    if (faSpec.id !== FarsiFontPreset.Vazirmatn) {
+      extraFontFaces = `${buildPersianFontFaceCss(faSpec.id)}\n`;
+    }
   }
 
-  const baseStyleTag = `${googleFontLink}<style id="pdf-color-preserve">
-html, body, * {
+  const injectedHeadBlock = `${vazirmatnLinkTag}${extraGoogleFontLink}
+<style id="pdf-color-preserve">
+${extraFontFaces}html, body, * {
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
   color-adjust: exact !important;
 }
-${customFontCss}
+body, p, h1, h2, h3, h4, h5, h6, span, div, li, td, th, blockquote {
+  font-family: ${activeFontFamily} !important;
+  letter-spacing: 0px !important;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1 !important;
+  -webkit-font-smoothing: antialiased;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
 </style>`;
 
-  const trimmed = rawHtml.trim();
+  const trimmed = normalizedHtml.trim();
 
   if (!trimmed) {
-    return `<!DOCTYPE html><html><head><meta charset="UTF-8">${baseStyleTag}</head><body></body></html>`;
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8">\n${injectedHeadBlock}\n</head><body></body></html>`;
   }
 
-  // Place our style tag right before </head> so when a specific font is chosen (or FA mode is active),
-  // its font-family rule cleanly takes effect while leaving @page and layout untouched.
   if (/<\/head>/i.test(trimmed)) {
-    return trimmed.replace(/<\/head>/i, `${baseStyleTag}\n</head>`);
+    return trimmed.replace(/<\/head>/i, `${injectedHeadBlock}\n</head>`);
   }
 
   if (/<head[\s>]/i.test(trimmed)) {
-    return trimmed.replace(/<head([^>]*)>/i, `<head$1>\n${baseStyleTag}`);
+    return trimmed.replace(/<head([^>]*)>/i, `<head$1>\n${injectedHeadBlock}`);
   }
 
   if (/<html[\s>]/i.test(trimmed)) {
     return trimmed.replace(
       /<html([^>]*)>/i,
-      `<html$1>\n<head>\n<meta charset="UTF-8">\n${baseStyleTag}\n</head>`
+      `<html$1>\n<head>\n<meta charset="UTF-8">\n${injectedHeadBlock}\n</head>`
     );
   }
 
-  const defaultLangAttr = languageMode === 'fa' ? 'lang="fa" dir="rtl"' : 'lang="en"';
-  return `<!DOCTYPE html>\n<html ${defaultLangAttr}>\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n${baseStyleTag}\n</head>\n<body>\n${trimmed}\n</body>\n</html>`;
+  const defaultLangAttr =
+    languageMode === 'fa' ? 'lang="fa" dir="rtl"' : 'lang="en"';
+  return `<!DOCTYPE html>\n<html ${defaultLangAttr}>\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n${injectedHeadBlock}\n</head>\n<body>\n${trimmed}\n</body>\n</html>`;
 }
 
 export interface Html2PdfOptions {

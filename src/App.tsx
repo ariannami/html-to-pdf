@@ -9,8 +9,10 @@ import {
   FarsiFontPreset,
   LanguageMode,
   normalizePdfFilename,
+  normalizePersianHTML,
   PdfLanguageFontSettings,
   prepareRawHtmlForPdf,
+  VAZIRMATN_CDN_URL,
 } from './utils/pdfConfig';
 import {
   DEFAULT_FARSI_SAMPLE_HTML,
@@ -39,7 +41,7 @@ declare global {
 export default function App() {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  const [htmlCode, setHtmlCode] = useState<string>(DEFAULT_SAMPLE_HTML);
+  const [htmlCode, setHtmlCode] = useState<string>(DEFAULT_FARSI_SAMPLE_HTML);
   const [filename, setFilename] = useState<string>('document.pdf');
   const [fontSettings, setFontSettings] = useState<PdfLanguageFontSettings>(
     DEFAULT_LANGUAGE_FONT_SETTINGS
@@ -98,7 +100,8 @@ export default function App() {
   );
 
   const handleFileLoaded = useCallback((loadedName: string, content: string) => {
-    setHtmlCode(content);
+    // Normalize Persian characters on file load as well
+    setHtmlCode(normalizePersianHTML(content));
     const baseName = loadedName.replace(/\.(html|htm)$/i, '').trim();
     if (baseName) {
       setFilename(`${baseName}.pdf`);
@@ -117,6 +120,9 @@ export default function App() {
       setFilename(normalizedName);
     }
 
+    // Always normalize Persian HTML before exporting to PDF
+    const normalizedHtml = normalizePersianHTML(htmlCode);
+
     setIsGeneratingDirect(true);
     setExportStatusMessage(`Converting HTML to ${normalizedName}...`);
 
@@ -125,7 +131,7 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          html: htmlCode,
+          html: normalizedHtml,
           filename: normalizedName,
           fontSettings,
         }),
@@ -161,8 +167,22 @@ export default function App() {
         throw new Error('Preview frame not ready');
       }
 
+      // Ensure Vazirmatn stylesheet and anti-disconnection rules exist inside iframe head
+      if (!doc.querySelector(`link[href="${VAZIRMATN_CDN_URL}"]`) && doc.head) {
+        const linkEl = doc.createElement('link');
+        linkEl.rel = 'stylesheet';
+        linkEl.href = VAZIRMATN_CDN_URL;
+        doc.head.appendChild(linkEl);
+      }
+
+      // Normalize any live text nodes inside the iframe before rasterizing
+      doc.body.innerHTML = normalizePersianHTML(doc.body.innerHTML);
+
       if (doc.fonts && typeof doc.fonts.ready?.then === 'function') {
         await doc.fonts.ready;
+      }
+      if (document.fonts && typeof document.fonts.ready?.then === 'function') {
+        await document.fonts.ready;
       }
 
       if (typeof iframeWin.html2pdf !== 'function') {
@@ -203,16 +223,47 @@ export default function App() {
         600
       );
 
-      const options = buildDirectHtml2PdfOptions(
+      const baseOptions = buildDirectHtml2PdfOptions(
         normalizedName,
         actualWidth,
         actualHeight,
         resolvedBgColor
       );
 
+      const injectedStyleEl = doc.getElementById('pdf-color-preserve');
+      const injectedCssText = injectedStyleEl ? injectedStyleEl.textContent || '' : '';
+
+      const optionsWithCloneFix = {
+        ...baseOptions,
+        html2canvas: {
+          ...baseOptions.html2canvas,
+          onclone: (clonedDoc: Document) => {
+            if (clonedDoc.head) {
+              const link = clonedDoc.createElement('link');
+              link.rel = 'stylesheet';
+              link.href = VAZIRMATN_CDN_URL;
+              clonedDoc.head.appendChild(link);
+
+              const style = clonedDoc.createElement('style');
+              style.textContent =
+                injectedCssText ||
+                `body, p, h1, h2, h3, h4, h5, h6, span, div, li, td, th, blockquote {
+                  font-family: 'Vazirmatn', Tahoma, sans-serif !important;
+                  letter-spacing: 0px !important;
+                  font-feature-settings: "kern" 1, "liga" 1, "calt" 1 !important;
+                  -webkit-font-smoothing: antialiased;
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                }`;
+              clonedDoc.head.appendChild(style);
+            }
+          },
+        },
+      };
+
       const runner = iframeWin.html2pdf || window.html2pdf;
       if (typeof runner === 'function') {
-        await runner().set(options).from(doc.body).save();
+        await runner().set(optionsWithCloneFix).from(doc.body).save();
         setExportStatusMessage(`Downloaded ${normalizedName}`);
       } else {
         throw new Error('PDF generator unavailable');
@@ -232,6 +283,7 @@ export default function App() {
     }
 
     const normalizedName = normalizePdfFilename(filename);
+    // prepareRawHtmlForPdf automatically runs normalizePersianHTML and injects Vazirmatn + RTL fix CSS
     const preparedHtml = prepareRawHtmlForPdf(htmlCode, fontSettings);
 
     const existingPrintFrame = document.getElementById(
@@ -267,10 +319,17 @@ export default function App() {
 
     setExportStatusMessage(`Opened Print / Save as PDF (${normalizedName})`);
 
-    window.setTimeout(() => {
+    window.setTimeout(async () => {
+      try {
+        if (printDoc.fonts && typeof printDoc.fonts.ready?.then === 'function') {
+          await printDoc.fonts.ready;
+        }
+      } catch {
+        // Ignore font readiness check failure
+      }
       printWin.focus();
       printWin.print();
-    }, 300);
+    }, 350);
   }, [htmlCode, filename, fontSettings]);
 
   return (
